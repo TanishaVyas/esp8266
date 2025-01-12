@@ -54,6 +54,10 @@ app.post("/upload", (req, res) => {
 
             latestImageBuffer = buffer; // Store the compressed image in memory
             console.log("Image received and stored in memory");
+
+            // Notify clients of the updated image
+            sendUpdate("image", { url: "/latest-image?" + new Date().getTime() });
+
             res.status(200).send("Image received and stored in memory");
         });
 });
@@ -98,12 +102,11 @@ app.get("/", (req, res) => {
             document.getElementById('analog-value').innerText = "Analog Value: " + data.value;
           });
 
-          function fetchLatestImage() {
+          eventSource.addEventListener('image', (event) => {
+            const data = JSON.parse(event.data);
             const img = document.getElementById("latest-image");
-            img.src = "/latest-image?" + new Date().getTime(); // Prevent caching by adding a timestamp
-          }
-
-          setInterval(fetchLatestImage, 5000); // Fetch updates every 5 seconds
+            img.src = data.url; // Update the image source with the new URL
+          });
         </script>
       </head>
       <body>
