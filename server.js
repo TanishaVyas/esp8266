@@ -11,6 +11,31 @@ app.use(express.raw({ type: "image/jpeg", limit: "10mb" }));
 
 let latestImageBuffer = null; // To store the latest image data
 let currentAnalogValue = null; // To store the latest analog value
+let sseClients = []; // To store connected SSE clients
+
+// SSE endpoint to send updates
+app.get("/events", (req, res) => {
+    res.set({
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+    });
+    res.flushHeaders();
+
+    sseClients.push(res);
+
+    // Remove client when they disconnect
+    req.on("close", () => {
+        sseClients = sseClients.filter(client => client !== res);
+    });
+});
+
+// Function to send updates to all SSE clients
+function sendUpdate(event, data) {
+    sseClients.forEach(client => {
+        client.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    });
+}
 
 // Endpoint to receive image upload
 app.post("/upload", (req, res) => {
@@ -42,6 +67,10 @@ app.post("/analog", express.json(), (req, res) => {
 
     currentAnalogValue = value; // Store the latest analog value
     console.log("Analog value received:", currentAnalogValue);
+
+    // Notify clients of the updated analog value
+    sendUpdate("analog", { value: currentAnalogValue });
+
     res.status(200).send("Analog value updated");
 });
 
@@ -57,36 +86,24 @@ app.get("/latest-image", (req, res) => {
 
 // Webpage to display the latest image and analog value
 app.get("/", (req, res) => {
-            res.send(`
+    res.send(`
     <html>
       <head>
         <title>ESP32-CAM Image Viewer</title>
         <script>
-          let isFetching = false; // Prevent multiple fetch calls at the same time
+          const eventSource = new EventSource('/events');
+
+          eventSource.addEventListener('analog', (event) => {
+            const data = JSON.parse(event.data);
+            document.getElementById('analog-value').innerText = "Analog Value: " + data.value;
+          });
 
           function fetchLatestImage() {
-            if (isFetching) return;
-            isFetching = true;
             const img = document.getElementById("latest-image");
             img.src = "/latest-image?" + new Date().getTime(); // Prevent caching by adding a timestamp
-            setTimeout(() => { isFetching = false; }, 1000); // Prevent multiple fetches within 1 second
           }
 
-          function fetchAnalogValue() {
-            fetch("/analog-value")
-              .then((response) => response.json())
-              .then((data) => {
-                document.getElementById("analog-value").innerText = "Analog Value: " + data.value;
-              })
-              .catch((error) => {
-                console.error("Error fetching analog value:", error);
-              });
-          }
-
-          setInterval(() => {
-            fetchLatestImage();
-            fetchAnalogValue();
-          }, 5000); // Fetch updates every 5 seconds
+          setInterval(fetchLatestImage, 5000); // Fetch updates every 5 seconds
         </script>
       </head>
       <body>
@@ -100,11 +117,6 @@ app.get("/", (req, res) => {
       </body>
     </html>
   `);
-});
-
-// Endpoint to get the latest analog value
-app.get("/analog-value", (req, res) => {
-    res.json({ value: currentAnalogValue !== null ? currentAnalogValue : "Not Available" });
 });
 
 // Start the server
