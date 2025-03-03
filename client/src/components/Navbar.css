@@ -1,0 +1,82 @@
+/* Navbar.css */
+.navbar {
+  background-color: #e6e5e7; /* Light greyish background */
+  padding: 10px 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-bottom: 2px solid #b6b6d5; /* Subtle separator */
+  width: 100%;
+  padding: 12px 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+}
+
+.navbar-container {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #0e0f23; /* Dark contrast color */
+}
+
+.nav-links {
+  display: flex;
+  gap: 15px;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #757179; /* Muted dark text */
+  font-weight: 500;
+  transition: color 0.3s ease-in-out;
+}
+
+.nav-links a:hover {
+  color: #000000; /* Subtle hover effect */
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.signup-btn,
+.login-btn,
+.signout-button {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease-in-out;
+}
+
+.signup-btn {
+  background-color: #b6b6d5;
+  color: white;
+}
+
+.login-btn {
+  background-color: #e9e3f1;
+  color: #0e0f23;
+}
+
+.signout-button {
+  background-color: #757179;
+  color: white;
+}
+
+.signup-btn:hover,
+.login-btn:hover,
+.signout-button:hover {
+  opacity: 1;
+}

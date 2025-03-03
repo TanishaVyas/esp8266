@@ -1,0 +1,47 @@
+/* Realtime.css */
+.realtime-container {
+  text-align: center;
+  padding: 20px;
+  background-color: #e6e5e7;
+  min-height: 100vh;
+}
+
+h2 {
+  color: #0e0f23;
+  margin-bottom: 20px;
+}
+
+.loading-text {
+  font-size: 16px;
+  color: #757179;
+}
+
+.error-text {
+  color: red;
+  font-size: 14px;
+}
+
+.image-container {
+  display: inline-block;
+  padding: 15px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.latest-image {
+  width: 300px;
+  height: auto;
+  border-radius: 10px;
+}
+
+.timestamp {
+  font-size: 14px;
+  color: #666;
+  margin-top: 10px;
+}
+
+.no-image {
+  font-size: 16px;
+  color: #757179;
+}
