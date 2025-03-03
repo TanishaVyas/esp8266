@@ -55,9 +55,7 @@ app.use("/auth", authRoutes);
 app.use("/storage", imageRoutes);
 
 app.use(express.static(path.join(_dirname, "/client/build")));
-app.get("*", (req, res) =>
-  res.sendFile(path.join(_dirname, "/client/build/index.html"))
-);
+app.get("*", (req, res) => res.sendFile(path.join(_dirname, "/client/build")));
 
 const authenticateUser = (req, res, next) => {
   const token = req.headers.authorization;
