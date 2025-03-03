@@ -23,7 +23,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3001"; // Adj
 const PORT = process.env.PORT || 3000;
 
 // Apply CORS middleware once
-app.use(cors({ origin: FRONTEND_URL, credentials: true }));
+app.use(cors());
 app.use(express.json()); // Ensure JSON parsing is enabled
 
 // Connect to MongoDB before starting server
