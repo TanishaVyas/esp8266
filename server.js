@@ -18,6 +18,7 @@ require("dotenv").config();
 console.log("🔍 MONGO_URI:", process.env.MONGO_URI);
 const http = require("http");
 const WebSocket = require("ws");
+const server = http.createServer(app);
 const app = express();
 
 // Allow frontend to connect (Change PORT if needed)
