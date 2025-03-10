@@ -16,6 +16,8 @@ const _dirname = path.resolve();
 
 require("dotenv").config();
 console.log("🔍 MONGO_URI:", process.env.MONGO_URI);
+const http = require("http");
+const WebSocket = require("ws");
 const app = express();
 
 // Allow frontend to connect (Change PORT if needed)
@@ -215,3 +217,58 @@ app.get("/", (req, res) => {
     </html>
   `);
 });
+
+// ✅ **WebSocket Setup**
+const wss = new WebSocket.Server({ server });
+
+let connectedClients = [];
+
+// 🔹 **WebSocket Connection Handling**
+wss.on("connection", (ws) => {
+  console.log("🟢 Client connected for real-time updates");
+  connectedClients.push(ws);
+
+  ws.on("close", () => {
+    connectedClients = connectedClients.filter((client) => client !== ws);
+  });
+});
+
+// 🔹 **Function to send real-time updates**
+const sendRealTimeUpdate = (message) => {
+  connectedClients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(message));
+    }
+  });
+};
+
+// ✅ **MongoDB Change Stream to Watch for Updates**
+async function watchDatabase() {
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("✅ Watching MongoDB for real-time updates...");
+
+    const db = mongoose.connection;
+    const deviceDataCollection = db.collection("deviceData");
+    const changeStream = deviceDataCollection.watch();
+
+    changeStream.on("change", (change) => {
+      if (change.operationType === "insert") {
+        const newData = change.fullDocument;
+        console.log("📌 New data inserted:", newData);
+
+        // 🔹 Send WebSocket notification
+        sendRealTimeUpdate({
+          type: "NEW_DATA",
+          deviceId: newData.deviceId,
+          timestamp: newData.timestamp,
+        });
+      }
+    });
+  } catch (error) {
+    console.error("❌ Error watching database:", error);
+  }
+}
+
+// ✅ **Start Watching MongoDB**
+watchDatabase().catch(console.error);
