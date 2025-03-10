@@ -105,4 +105,12 @@ router.get("/user", async (req, res) => {
   }
 });
 
+router.get("/details", authenticateToken, (req, res) => {
+  res.json({
+    name: req.User.name,
+    email: req.User.email,
+    deviceId: req.User.deviceId,
+  });
+});
+
 module.exports = router;
