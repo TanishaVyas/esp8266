@@ -5,6 +5,23 @@ const User = require("../models/Users"); // Adjust the path if needed
 
 const router = express.Router();
 
+const authenticateToken = (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1]; // Extract token
+
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized: No token provided" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, "your_secret_key");
+    req.user = decoded; // Attach decoded user info to `req`
+    next();
+  } catch (error) {
+    console.error("Token verification error:", error);
+    return res.status(401).json({ message: "Invalid or expired token" });
+  }
+};
+
 // SIGNUP ROUTE with Unique Device ID Validation
 router.post("/signup", async (req, res) => {
   const { name, email, password, deviceId } = req.body;
@@ -105,12 +122,18 @@ router.get("/user", async (req, res) => {
   }
 });
 
-router.get("/details", authenticateToken, (req, res) => {
-  res.json({
-    name: req.User.name,
-    email: req.User.email,
-    deviceId: req.User.deviceId,
-  });
-});
+router.get("/details", authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password"); // Exclude password
 
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ name: user.name, email: user.email, deviceId: user.deviceId });
+  } catch (error) {
+    console.error("Error fetching user details:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 module.exports = router;
