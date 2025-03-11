@@ -9,6 +9,8 @@ const DeviceData = require("./models/DeviceData");
 const users = require("./models/Users");
 const authRoutes = require("./routes/auth");
 const imageRoutes = require("./routes/images");
+const webpush = require("web-push");
+const bodyParser = require("body-parser");
 
 //const _filename = fileURLToPath(import.meta.url);
 //const _dirname = path.dirname(_filename);
@@ -28,6 +30,7 @@ const PORT = process.env.PORT || 3000;
 // Apply CORS middleware once
 app.use(cors());
 app.use(express.json()); // Ensure JSON parsing is enabled
+app.use(bodyParser.json());
 
 // Connect to MongoDB before starting server
 mongoose
@@ -243,33 +246,80 @@ const sendRealTimeUpdate = (message) => {
   });
 };
 
-// ✅ **MongoDB Change Stream to Watch for Updates**
-async function watchDatabase() {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("✅ Watching MongoDB for real-time updates...");
+const SubscriptionSchema = new mongoose.Schema({
+  deviceId: String, // Store the user's device ID
+  endpoint: String,
+  keys: Object,
+});
 
-    const db = mongoose.connection;
-    const deviceDataCollection = db.collection("deviceData");
-    const changeStream = deviceDataCollection.watch();
+const Subscription = mongoose.model("Subscription", SubscriptionSchema);
 
-    changeStream.on("change", (change) => {
-      if (change.operationType === "insert") {
-        const newData = change.fullDocument;
-        console.log("📌 New data inserted:", newData);
+// Web Push Config
+const publicVapidKey =
+  "BNG2BDTAu1qPmRWI5kXH2KyJR10rzQLltb6h7kBwm5OcmvoU7NToKfR5vwVk6C3yBneNC4Oojfl2Ug_gtuOg68I";
+const privateVapidKey = "OPoDhj5n5NsdTIIrLCuZFuhyzJG2wrpzhNdcmgTfVGU";
 
-        // 🔹 Send WebSocket notification
-        sendRealTimeUpdate({
-          type: "NEW_DATA",
-          deviceId: newData.deviceId,
-          timestamp: newData.timestamp,
-        });
-      }
-    });
-  } catch (error) {
-    console.error("❌ Error watching database:", error);
+webpush.setVapidDetails(
+  "mailto:tanisha.vyas.btech2022@sitpune.edu.in",
+  publicVapidKey,
+  privateVapidKey
+);
+
+// ✅ Route: Save Subscription
+app.post("/subscribe", async (req, res) => {
+  const { deviceId, endpoint, keys } = req.body;
+
+  // Check if subscription already exists for this deviceId
+  let existingSub = await Subscription.findOne({ deviceId });
+  if (!existingSub) {
+    const subscription = new Subscription({ deviceId, endpoint, keys });
+    await subscription.save();
   }
-}
 
-// ✅ **Start Watching MongoDB**
-watchDatabase().catch(console.error);
+  res.status(201).json({ message: "Subscription saved!" });
+});
+
+// ✅ Route: Send Push Notification
+app.post("/send-notification", async (req, res) => {
+  const { deviceId, title, message } = req.body;
+
+  // Find subscriptions matching the deviceId
+  const subscriptions = await Subscription.find({ deviceId });
+
+  const payload = JSON.stringify({ title, message });
+
+  // Send push notifications only to users with the matching deviceId
+  subscriptions.forEach((sub) => {
+    webpush.sendNotification(sub, payload).catch((err) => console.error(err));
+  });
+
+  res.status(200).json({ message: "Push notifications sent!" });
+});
+
+app.post("/add-data", async (req, res) => {
+  try {
+    const { deviceId, someOtherField } = req.body; // Get data from request
+
+    // ✅ Store new data in MongoDB
+    const newData = new DeviceData({ deviceId, someOtherField });
+    await newData.save();
+
+    // ✅ Send push notification ONLY to users with the same deviceId
+    await fetch("http://smart-box.onrender.com/send-notification", {
+      method: "POST",
+      body: JSON.stringify({
+        deviceId,
+        title: "New Data Added!",
+        message: `A new record for Device ID ${deviceId} has been stored.`,
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    res.status(201).json({ message: "Data saved & notification sent!" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to save data" });
+  }
+});
