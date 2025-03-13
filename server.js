@@ -113,16 +113,19 @@ app.post("/upload/:deviceId", upload.single("image"), async (req, res) => {
   }
 
   try {
-    // Compress and store image as Buffer (binary)
+    // Compress and convert image to Base64
     const compressedImage = await sharp(req.file.buffer)
       .resize(640, 480)
       .jpeg({ quality: 80 })
       .toBuffer();
 
+    // Convert to Base64 string
+    const base64Image = compressedImage.toString("base64");
+
     // Save to MongoDB
     const newImage = new DeviceData({
-      deviceId: deviceId, // Change this dynamically if needed
-      image: compressedImage, // Store binary data
+      deviceId: req.params.deviceId, // Extract from URL
+      image: base64Image, // Store as Base64 string
       timestamp: new Date(),
     });
 
