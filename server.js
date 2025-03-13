@@ -157,7 +157,7 @@ app.post("/upload", (req, res) => {
     });
 });
 
-*/
+
 
 // Endpoint to receive analog value
 app.post("/analog", express.json(), (req, res) => {
@@ -183,6 +183,39 @@ app.get("/latest-image", (req, res) => {
 
   res.set("Content-Type", "image/jpeg");
   res.send(latestImageBuffer);
+});
+
+*/
+
+let currentAnalogValues = {}; // Store latest analog values for each device
+
+app.post("/analog/:deviceId", express.json(), (req, res) => {
+  const { value } = req.body;
+  const deviceId = req.params.deviceId; // Extract deviceId from URL
+
+  if (value === undefined) {
+    return res.status(400).send("No analog value received");
+  }
+
+  // Store latest value per device
+  currentAnalogValues[deviceId] = value;
+  console.log(`Analog value received from ${deviceId}:`, value);
+
+  // Notify frontend of update
+  sendUpdate("analog", { deviceId, value });
+
+  res.status(200).send("Analog value updated");
+});
+
+// Endpoint to get the latest analog value for a specific device
+app.get("/analog/:deviceId", (req, res) => {
+  const deviceId = req.params.deviceId;
+
+  if (!(deviceId in currentAnalogValues)) {
+    return res.status(404).send("No analog value received yet for this device");
+  }
+
+  res.json({ deviceId, value: currentAnalogValues[deviceId] });
 });
 
 // Webpage to display the latest image and analog value
