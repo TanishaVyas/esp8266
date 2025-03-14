@@ -107,19 +107,23 @@ const multer = require("multer");
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-app.post("/upload/:deviceId", upload.single("image"), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ message: "No image file received" });
+app.post("/upload/:deviceId", async (req, res) => {
+  if (!req.body || !req.body.image) {
+    return res.status(400).json({ message: "No image data received" });
   }
 
   try {
-    // Convert file buffer to Base64
-    const base64Image = req.file.buffer.toString("base64");
+    let base64Image = req.body.image;
+
+    // Ensure the Base64 string has the JPEG header
+    if (!base64Image.startsWith("data:image/")) {
+      base64Image = `data:image/jpeg;base64,${base64Image}`;
+    }
 
     // Save to MongoDB
     const newImage = new DeviceData({
-      deviceId: req.params.deviceId, // Get deviceId from URL
-      image: base64Image, // Store as Base64
+      deviceId: req.params.deviceId,
+      image: base64Image, // Store with header
       timestamp: new Date(),
     });
 
