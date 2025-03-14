@@ -49,7 +49,7 @@ router.get("/latest-image", async (req, res) => {
     }
 
     res.json({
-      image: latestImage.image, // Convert Buffer to Base64
+      image: latestImage.image.toString("base64"), , // Convert Buffer to Base64
       timestamp: latestImage.timestamp,
     });
   } catch (error) {
