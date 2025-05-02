@@ -5,6 +5,7 @@ const UserSchema = new mongoose.Schema({
   email: { type: String, required: true },
   password: { type: String, required: true },
   deviceId: { type: String, required: true },
+  fcmToken: { type: String },
 });
 
 module.exports = mongoose.model("User", UserSchema, "Users"); // Explicitly use "Users"

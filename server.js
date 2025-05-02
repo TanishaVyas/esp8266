@@ -9,6 +9,7 @@ const DeviceData = require("./models/DeviceData");
 const users = require("./models/Users");
 const authRoutes = require("./routes/auth");
 const imageRoutes = require("./routes/images");
+const notificationRoutes = require("./routes/notificationRoutes");
 const webpush = require("web-push");
 const bodyParser = require("body-parser");
 
@@ -59,6 +60,7 @@ app.get("/test-connection", (req, res) => {
 
 app.use("/auth", authRoutes);
 app.use("/storage", imageRoutes);
+app.use("/api", notificationRoutes);
 
 const authenticateUser = (req, res, next) => {
   const token = req.headers.authorization;
